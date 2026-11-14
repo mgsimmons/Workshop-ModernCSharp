@@ -78,6 +78,8 @@ Assuming those are present, converting the project to use AOT as as simple as ad
 In the meantime, your team leader will now begin speaking about the latest features of C# so you can be ready for what comes next!
 
 ## Lab 1: Domain model
+*(This lab is estimated to take 60-90 minutes.)*
+
 Welcome back! Now that you are refreshed on some of the core syntax of the language, we can proceed by building the core domain model as a .NET Class Library for use by our project. We build it as a Class Library, of course, so that it could be reused in other projects, such as the rumored "Mutant Registration Act" discussed among certain members of the President's administration.
 
 Before you get too far, create a new directory (we suggest `WWSHA.Domain`) for the new Class Library project.
@@ -116,17 +118,19 @@ And, yes, I suppose, if you feel like you have the time, create a unit-test proj
 > *Between you and me, yes, yes you do. I would, anyway. But everybody works differently, and if you're not familiar with any of the .NET unit-test frameworks, don't lose any sleep over it. If you do, however, want to write some tests against your domain model, creating a new test project is either one of `dotnet new nunit` (NUnit), `dotnet new mstest` (MSTest), or `dotnet new xunit` or `dotnet new xunit3` (xUnit). From there, you just need to reference the Class Library project (`dotnet reference add ../WWSHA.Domain/WWSHA.Domain.csproj`, if the domain library is in a directory called `WWSHA.Domain`) and start writing your tests.*
 
 ## Lab 2: Persistence (Storage and Access)
-In this section, we're going to implement two interfaces to represent the "query" and "command" side of a persistence layer. Everything will be in-memory, just to keep things simple, but we will be differentiating "reads" from "writes" in our internal persistence API, as an eye towards being able to optimize those differently much later down the line.
+*(This lab is estimated to take 60 minutes.)*
+
+In this section, you're going to implement two interfaces to represent the "query" and "command" side of a persistence layer. Everything will be in-memory, just to keep things simple, but we will be differentiating "reads" from "writes" in our internal persistence API, as an eye towards being able to optimize those differently much later down the line.
 
 To start, create a new peer directory called `WWSHA.Persistence`, and in that directory create a new ClassLibrary project. *(And, if you wish, now is also a good time to create the test project to sit beside it.)*
 
 Then, create two interfaces, `IDomainRepository`, a "write-only" interface, and `IDomainContext`, the "read-only" interface for executing queries against the in-memory-stored objects. The idea here is that any code that needs to look up on a domain object should be able to do so through the `IDomainContext` interface, but any code that needs to create or update a domain object should be able to do so through the `IDomainRepository` interface. What's more, because so often updates require modifying more than a single domain object at a time, we are going to create a set of "command"-style objects that encapsulate the modifications necessary. An `ICommand` interface will capture the core parts of what it means to be a command.
 
-*(If this is feeling a little different than your standard CRUD-style API, that's deliberate. This approach is embracing more of the ideas behind [CQRS](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs) and [event-sourced](https://learn.microsoft.com/en-us/azure/architecture/patterns/event-sourcing) architectures, particularly since they tend to adopt a much more "functional (programming)-first" style; this is a deliberate choice on my part, to expose people to the ideas if they haven't seen it before. Since this is a C# lab rather than an architecture one, though, we're going to play a little fast-and-loose with the ideas and not take them too far.)*
+*(If this is feeling a little different than your standard CRUD-style API, that's deliberate. This approach is embracing more of the ideas behind [CQRS](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs) and [event-sourced](https://learn.microsoft.com/en-us/azure/architecture/patterns/event-sourcing) architectures, particularly since they tend to adopt a much more "functional (programming)-first" style; this is a deliberate choice on my part, to expose people to the idea(s) if they haven't seen it before. Since this is a C# lab rather than an architecture one, though, we're going to play a little fast-and-loose with the ideas and not take them too far.)*
 
-Let's get our lookups out of the way first; create the `IDomainContext` interface, and on that interface declare five `get`-only properties, one for each of our domain types. To maximize flexibility, however, declare them as `IReadOnlyCollection<>` types (where the generic parameter will be each of the domain types). Because they are `IReadOnlyCollection<>`s, we will be able to write LINQ-style queries against them when we want to find things, and much of that will actually be able to translate to a disk-based persistence implementation later.
+Let's get our lookups out of the way first; create the `IDomainContext` interface, and on that interface declare five `get`-only properties, one for each of our domain types. To maximize flexibility, however, declare them as `IReadOnlyCollection<>` types (where the generic parameter will be each of the domain types). Because they are `IReadOnlyCollection<>`s, you will be able to use many of the LINQ APIs (`Select()`, `SelectMany()`, `Where()`, etc.) to find things in the domain types, and much of that will actually be able to translate to a disk-based persistence implementation later.
 
-*(NOTE: `IReadOnlyCollection<>` and `IQueryable` (which is the interface for LINQ-style queries) are not directly related to each other by inheritance, so arguably these shold be `IQueryable` declarations, which would then permit default implementation blocks on the interface that consist of LINQ queries. The main difference between the two interfaces is that `IReadOnlyCollection<>` only promises to be a internal/in-memory collection of objects, whereas `IQueryable` promises to be a collection of objects that can be LINQ-queried, even from external sources. There's pros and cons to both approaches. If you got with the `IQueryable` approach, an easy way to convert an in-memory `List<T>` to a queryable collection is to convert it to an array, then call `AsQueryable` on it, a la `items.ToArray().AsQueryable()`.)*
+*(NOTE: `IReadOnlyCollection<>` and `IQueryable` (which is the interface for LINQ-style queries) are not directly related to each other by inheritance, so arguably these shold be `IQueryable` declarations, which would then permit default implementation blocks on the interface that consist of LINQ queries. The main difference between the two interfaces is that `IReadOnlyCollection<>` only promises to be a internal/in-memory collection of objects, whereas `IQueryable` promises to be a collection of objects that can be LINQ-queried, even from external sources. There's pros and cons to both approaches. If you go with the `IQueryable` approach, an easy way to convert an in-memory `List<T>` to a queryable collection is to convert it to an array and then call `AsQueryable()` on it, a la `items.ToArray().AsQueryable()`.)*
 
 Implementing the `IDomainContext` is pretty easy. On a new class, perhaps call it `InMemoryDomainRepository` (or something equally atrocious), implement the `IDomainContext` interface, and store each of the domain objects to a `List<T>` internally. Then, make sure the interface is fully implemented and compiles.
 
@@ -148,7 +152,9 @@ Suggested Commands include:
 Conventionally, each of these would be suffixed with "Command", but that's a personal choice.
 
 ## Lab 3: HTTP API
-Finally, it's time to wire this all up and expose it to the world as an HTTP API. That's going to need an ASP.NET WebAPI project (new directory again!) with references to both of the previous ClassLibraries. Contrary to what we're building internally, we'll expose a more traditional RESTful API. Note that 
+*(This lab is estimated to be about 60 minutes.)*
+
+Finally, it's time to wire this all up and expose it to the world as an HTTP API. That's going to need an ASP.NET WebAPI project (new directory again!) with references to both of the previous ClassLibraries. Contrary to what we're building internally, we'll expose a more traditional RESTful API. The various `Dto` classes mentionde below are types designed to pair well with the auto-JSON-conversion features of ASP.NET WebAPI, and are usually `record`s; while tuples would certainly work well here as well, `record`s tend to be the preference since they can be reused in multiple endpoints.
 
 Suggested API endpoints are:
 
@@ -188,7 +194,6 @@ Suggested API endpoints are:
   | GET | `/api/reports/{id}` | find report | 200 + `ReportDto` | 404 |
   | GET | `/api/assessments?heroId=&incidentId=` | LINQ filters | 200 + `AssessmentDto[]` | — |
 
-The various `Dto` classes are usually `record`s that contain the fields needed by the REST API; tuples are often used similarly, particularly if the parameters are needed only on a single endpoint.
 
 ## To Be Continued...
 There's certainly more work that could be done from here:
