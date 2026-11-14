@@ -17,12 +17,17 @@ This `main` branch contains the overall picture of the lab manual, and each of t
 
 Alternatively, if you don't want to (or aren't able to, due to corporate laptop restrictions), you can view the instructions in the GitHub interface.
 
+### References
+I have included both the C# Language Reference and the C# Specifications (pulled from the Microsoft website on 9 November 2026) in this repo in the `docs` directory if you want to look something up while viewing this offline.
+
+There is also my final solution in the `final` branch of this repository, should you want to have a look and see what the Sam Hill [^2] I was trying to describe in my lab instructions should those instructions prove difficult to parse.
+
 ## Overview
 Welcome! You have just been recruited to the ***World's Worst SuperHero Agency***, a burgeoning startup looking to create accountability for the world's worst superheroes.
 
 > *Yeah, I don't believe in boring labs.*
 
-We have received a grant from the President-Elect Norman Osborn to create an online HTTP API for tracking incidents, the heroes assigned to those incidents, and the damage done during those incidents. As the developer on the team, it's your job to create the system, and as President Osborn is good friends with Bill Gates, Satya Nadella, and the other billionaires of Microsoft, he has wisely decided to use C#/.NET for the project. And, of course, nothing done in a Osborn administration is ever done using legacy tools or products--only the best for Mr Osborn--so all of the latest features of C# are available to you.
+We have received a grant from the President-Elect [Norman Osborn](https://marvel.fandom.com/wiki/Norman_Osborn_(Earth-616)) to create an online HTTP API for tracking incidents, the heroes assigned to those incidents, and the damage done during those incidents. As the developer on the team, it's your job to create the system, and as President Osborn is good friends with Bill Gates, Satya Nadella, and the other billionaires of Microsoft, he has wisely decided to use C#/.NET for the project. And, of course, nothing done in a Osborn administration is ever done using legacy tools or products--only the best for Mr Osborn--so all of the latest features of C# are available to you.
 
 > *Apologies if you are more of a DC fan than Marvel. I collected X-Men comics in high school, and played the Marvel SuperHeroes RPG in college. And hey, now that the Marvel Cinematic Universe has been a part of our collective cultural experience for 20 years, it feels pretty safe to assume you'll know who at least a few of those folks are. And who doesn't love a superhero action movie?*
 
@@ -199,12 +204,14 @@ There's certainly more work that could be done from here:
 
 * create a web front-end for it *(being careful not to violate any copyright restrictions, of course, lest you anger the lawyers from the House of Mouse....)* in your favorite client-side or server-side web framework.
 
-* create a mobile app client for it (perhaps using [MAUI](https://dotnet.microsoft.com/en-us/apps/maui), [Flutter](https://flutter.dev/) or [React Native](https://reactnative.dev/)?)
+* create a mobile app client for it (perhaps using [MAUI](https://dotnet.microsoft.com/en-us/apps/maui), [Flutter](https://flutter.dev/) or [React Native](https://reactnative.dev/)?).
 
-* create a command-line (or even Terminal UI [^2] ) client for it
+* create a command-line (or even Terminal UI [^3] ) client for it.
 
 ---
 
 [^1]: One of the first projects I built back when I was first exploring C# was to build a "command-line type explorer", which took an assembly and a type name at the command line, loaded that assembly, and then used System.Reflection to walk the contents, just to see what compiler magic was being used. Today, I'd do that using a library like [Cecil](https://github.com/jbevain/cecil) to do an even lower level of examination.
 
-[^2]: I continue to be fascinated by how much functionality can be expressed in a terminal window via libraries like Terminal.UI. Of course, I was a huge fan of [TurboVision](https://github.com/magiblot/tvision) back in the late DOS era, so maybe ignore my opinions on the subject....
+[^2]: Sam Hill, of course, refers to the Michigan surveyor Samuel W. Hill. [Wikipedia has more.](https://en.wikipedia.org/wiki/Sam_Hill_(euphemism))
+
+[^3]: I continue to be fascinated by how much functionality can be expressed in a terminal window via libraries like Terminal.UI. Of course, I was a huge fan of [TurboVision](https://github.com/magiblot/tvision) back in the late DOS era, so maybe ignore my opinions on the subject....
