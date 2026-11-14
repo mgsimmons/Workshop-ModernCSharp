@@ -13,8 +13,6 @@ You will not be able to make changes to my repository. If you want to be able to
 
 > *I realize it's rude to not let you push changes to my repo, but there's the lawyers to consider. I mean, I trust **you**, of course, but all those people sitting next to you look a little sus to me, and I have to treat you all the same or someone will wonder if I'm playing favorites. Don't worry, though, you're still my favorite, even if the lawyers won't let me say that out loud.*
 
-This `main` branch contains the overall picture of the lab manual, and each of the hands-on labs are in their own branch. Each branch will have a `STEPS.md` file that contains the step-by-step directions.
-
 Alternatively, if you don't want to (or aren't able to, due to corporate laptop restrictions), you can view the instructions in the GitHub interface.
 
 ### References
