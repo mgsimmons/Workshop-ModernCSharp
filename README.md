@@ -99,10 +99,79 @@ And, yes, I suppose, if you feel like you have the time, create a unit-test proj
 > *Between you and me, yes, yes you do. I would, anyway. But everybody works differently, and if you're not familiar with any of the .NET unit-test frameworks, don't lose any sleep over it. If you do, however, want to write some tests against your domain model, creating a new test project is either one of `dotnet new nunit` (NUnit), `dotnet new mstest` (MSTest), or `dotnet new xunit` or `dotnet new xunit3` (xUnit). From there, you just need to reference the Class Library project (`dotnet reference add ../WWSHA.Domain/WWSHA.Domain.csproj`, if the domain library is in a directory called `WWSHA.Domain`) and start writing your tests.*
 
 ## Lab 2: Persistence (Storage and Access)
-In this section, we're going to implement two interfaces to represent the "query" and "command" side of a persistence layer. Everything will be in-memory, 
+In this section, we're going to implement two interfaces to represent the "query" and "command" side of a persistence layer. Everything will be in-memory, just to keep things simple, but we will be differentiating "reads" from "writes" in our internal persistence API, as an eye towards being able to optimize those differently much later down the line.
+
+To start, create a new peer directory called `WWSHA.Persistence`, and in that directory create a new ClassLibrary project. *(And, if you wish, now is also a good time to create the test project to sit beside it.)*
+
+Then, create two interfaces, `IDomainRepository`, a "write-only" interface, and `IDomainContext`, the "read-only" interface for executing queries against the in-memory-stored objects. The idea here is that any code that needs to look up on a domain object should be able to do so through the `IDomainContext` interface, but any code that needs to create or update a domain object should be able to do so through the `IDomainRepository` interface. What's more, because so often updates require modifying more than a single domain object at a time, we are going to create a set of "command"-style objects that encapsulate the modifications necessary. An `ICommand` interface will capture the core parts of what it means to be a command.
+
+*(If this is feeling a little different than your standard CRUD-style API, that's deliberate. This approach is embracing more of the ideas behind [CQRS](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs) and [event-sourced](https://learn.microsoft.com/en-us/azure/architecture/patterns/event-sourcing) architectures, particularly since they tend to adopt a much more "functional (programming)-first" style; this is a deliberate choice on my part, to expose people to the ideas if they haven't seen it before. Since this is a C# lab rather than an architecture one, though, we're going to play a little fast-and-loose with the ideas and not take them too far.)*
+
+Let's get our lookups out of the way first; create the `IDomainContext` interface, and on that interface declare five `get`-only properties, one for each of our domain types. To maximize flexibility, however, declare them as `IReadOnlyCollection<>` types (where the generic parameter will be each of the domain types). Because they are `IReadOnlyCollection<>`s, we will be able to write LINQ-style queries against them when we want to find things, and much of that will actually be able to translate to a disk-based persistence implementation later.
+
+*(NOTE: `IReadOnlyCollection<>` and `IQueryable` (which is the interface for LINQ-style queries) are not directly related to each other by inheritance, so arguably these shold be `IQueryable` declarations, which would then permit default implementation blocks on the interface that consist of LINQ queries. The main difference between the two interfaces is that `IReadOnlyCollection<>` only promises to be a internal/in-memory collection of objects, whereas `IQueryable` promises to be a collection of objects that can be LINQ-queried, even from external sources. There's pros and cons to both approaches. If you got with the `IQueryable` approach, an easy way to convert an in-memory `List<T>` to a queryable collection is to convert it to an array, then call `AsQueryable` on it, a la `items.ToArray().AsQueryable()`.)*
+
+Implementing the `IDomainContext` is pretty easy. On a new class, perhaps call it `InMemoryDomainRepository` (or something equally atrocious), implement the `IDomainContext` interface, and store each of the domain objects to a `List<T>` internally. Then, make sure the interface is fully implemented and compiles.
+
+*(Maybe write some tests to make sure it all works as expected.)*
+
+For updates, create an `ICommand` interface and a generic `ICommand<TResult>` interface. Both are simple interfaces, each having a single method, `Execute`, taking two parameters, one an `IDomainContext` (to be able to query for other objects if necessary) and `IDomainRepository` (to store the changed objects); the non-generic version returns `void`, the generic version returns a `TResult` type.
+
+Next, it's time to implement some Commands, although you may want to wait until after the `IDomainRepository` itself is written (which is next), since there's going to be a pretty tight relationship between it and the Commands you create.
+
+*(The real question here is, do you prefer to see the details of the update logic in the repository, collectively, or individually in each Command? There's no right answer here. In my solution, I put it in the Command objects, though that create some duplicated logic which I refactored out to a helper class. Putting all the logic into the `InMemoryDomainRepository`, however, would be a great way to practice pattern-matching.)*
+
+Suggested Commands include:
+
+* RegisterHero 
+* FileIncident, CloseIncident
+* AssignHero
+* FileDamageReport
+
+Conventionally, each of these would be suffixed with "Command", but that's a personal choice.
 
 ## Lab 3: HTTP API
+Finally, it's time to wire this all up and expose it to the world as an HTTP API. That's going to need an ASP.NET WebAPI project (new directory again!) with references to both of the previous ClassLibraries. Contrary to what we're building internally, we'll expose a more traditional RESTful API. Note that 
 
+Suggested API endpoints are:
+
+- Hero endpoints:
+
+  | Method | Route | Behavior | Success | Errors |
+  |---|---|---|---|---|
+  | POST | `/api/heroes` | `RegisterHeroCommand` | 201 + `HeroDto` | 400 |
+  | GET | `/api/heroes?available={bool?}` | LINQ filter on `Heroes` | 200 + `HeroDto[]` | — |
+  | GET | `/api/heroes/{id}` | `Heroes.SingleOrDefault` | 200 + `HeroDetailDto` | 404 |
+  | GET | `/api/heroes/{id}/assessments` | filter `Assessments` | 200 + `AssessmentDto[]` | 404 |
+
+- Incident endpoints:
+
+  | Method | Route | Behavior | Success | Errors |
+  |---|---|---|---|---|
+  | POST | `/api/incidents` | `FileIncidentCommand` | 201 + `IncidentDto` | 400 |
+  | GET | `/api/incidents?status=&category=&city=` | LINQ filters | 200 + `IncidentDto[]` | 400 invalid enum |
+  | GET | `/api/incidents/{id}` | incident + assignment + reports | 200 + `IncidentDetailDto` | 404 |
+  | POST | `/api/incidents/{id}/heroes` | `AssignHeroCommand` | 200 + `AssignmentDto` | 404, 409 |
+  | GET | `/api/incidents/{id}/assignment` | find assignment | 200 + `AssignmentDto` | 404 |
+  | POST | `/api/incidents/{id}/reports` | `FileDamageReportCommand` | 201 + `ReportDto` | 400, 404, 409 |
+  | GET | `/api/incidents/{id}/reports` | filter `Reports` | 200 + `ReportDto[]` | 404 |
+  | POST | `/api/incidents/{id}/close` | `CloseIncidentCommand` | 200 + `CloseIncidentResponse` | 404, 409 |
+
+- Assignment endpoints:
+
+  | Method | Route | Behavior | Success | Errors |
+  |---|---|---|---|---|
+  | GET | `/api/assignments?incidentId=&heroId=&open={bool?}` | LINQ filters | 200 + `AssignmentDto[]` | — |
+  | GET | `/api/assignments/{id}` | assignment + heroes + reports | 200 + `AssignmentDto` | 404 |
+
+- Report and assessment endpoints:
+
+  | Method | Route | Behavior | Success | Errors |
+  |---|---|---|---|---|
+  | GET | `/api/reports/{id}` | find report | 200 + `ReportDto` | 404 |
+  | GET | `/api/assessments?heroId=&incidentId=` | LINQ filters | 200 + `AssessmentDto[]` | — |
+
+The various `Dto` classes are usually `record`s that contain the fields needed by the REST API; tuples are often used similarly, particularly if the parameters are needed only on a single endpoint.
 
 ## To Be Continued...
 There's certainly more work that could be done from here:
