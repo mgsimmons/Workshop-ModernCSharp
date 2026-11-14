@@ -1,0 +1,395 @@
+@WWSHA.Api_HostAddress = http://localhost:5159
+
+### ===========================================================================
+### Phase 4 smoke workflow
+### Run the requests in order. Named requests feed IDs into later requests.
+### ===========================================================================
+
+### 0. Health
+GET {{WWSHA.Api_HostAddress}}/api/health
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 1. Register three heroes with funny names and questionable powers.
+###    Each returns 201 with availability = "Available" and reputation = 0.
+### ---------------------------------------------------------------------------
+
+### 1a. Hero A
+# @name registerHeroA
+POST {{WWSHA.Api_HostAddress}}/api/heroes
+Content-Type: application/json
+
+{
+  "name": "Captain Procrastination",
+  "superpower": "Saves the day tomorrow"
+}
+
+### 1b. Hero B
+# @name registerHeroB
+POST {{WWSHA.Api_HostAddress}}/api/heroes
+Content-Type: application/json
+
+{
+  "name": "The Incredible Sulk",
+  "superpower": "Emotional damage at close range"
+}
+
+### 1c. Hero C
+# @name registerHeroC
+POST {{WWSHA.Api_HostAddress}}/api/heroes
+Content-Type: application/json
+
+{
+  "name": "Mildly Inconvenienced Man",
+  "superpower": "Files a strongly worded complaint"
+}
+
+### ---------------------------------------------------------------------------
+### 2. File incident A. A hero is available, so status = "InProgress",
+###    assignmentId is set, and one hero is assigned.
+### ---------------------------------------------------------------------------
+
+### 2a. Incident A
+# @name fileIncidentA
+POST {{WWSHA.Api_HostAddress}}/api/incidents
+Content-Type: application/json
+
+{
+  "city": "Townsville",
+  "occurredAt": "2026-11-11T09:00:00",
+  "description": "A villain stole every left shoe in town.",
+  "category": "SupervillainAppearance"
+}
+
+### 2b. Confirm incident A is InProgress with one assigned hero
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentA.response.body.$.id}}
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 3. File incident B. A second available hero is assigned.
+### ---------------------------------------------------------------------------
+
+### 3a. Incident B
+# @name fileIncidentB
+POST {{WWSHA.Api_HostAddress}}/api/incidents
+Content-Type: application/json
+
+{
+  "city": "Springfield",
+  "occurredAt": "2026-11-11T10:00:00",
+  "description": "A kaiju is politely waiting in line at the bakery.",
+  "category": "WanderingKaiju"
+}
+
+### 3b. Confirm incident B is InProgress
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentB.response.body.$.id}}
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 4. File incident C. The third available hero is assigned.
+### ---------------------------------------------------------------------------
+
+### 4a. Incident C
+# @name fileIncidentC
+POST {{WWSHA.Api_HostAddress}}/api/incidents
+Content-Type: application/json
+
+{
+  "city": "Shelbyville",
+  "occurredAt": "2026-11-11T11:00:00",
+  "description": "Two heroes argued about the correct way to save a cat.",
+  "category": "DisagreementBetweenHeros"
+}
+
+### 4b. Confirm incident C is InProgress
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentC.response.body.$.id}}
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 5. File incident D. No hero is available, so it stays "Opened".
+### ---------------------------------------------------------------------------
+
+### 5a. Incident D
+# @name fileIncidentD
+POST {{WWSHA.Api_HostAddress}}/api/incidents
+Content-Type: application/json
+
+{
+  "city": "Ogdenville",
+  "occurredAt": "2026-11-11T12:00:00",
+  "description": "An alien invasion is scheduled for next Tuesday.",
+  "category": "AlienInvasion"
+}
+
+### 5b. Confirm incident D is Opened with no assignment
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 6. File two damage reports against incident D while it is Opened.
+###    Both have assignmentId = null; damageReportCount = 2.
+### ---------------------------------------------------------------------------
+
+### 6a. Report D1
+# @name fileReportD1
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}/reports
+Content-Type: application/json
+
+{
+  "description": "A mailbox was reduced to splinters.",
+  "severity": "Moderate",
+  "cost": 250,
+  "injury": 0,
+  "reportedAt": "2026-11-11T12:15:00"
+}
+
+### 6b. Report D2
+# @name fileReportD2
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}/reports
+Content-Type: application/json
+
+{
+  "description": "The town fountain now glows an unsettling green.",
+  "severity": "Severe",
+  "cost": 1500,
+  "injury": 1,
+  "reportedAt": "2026-11-11T12:20:00"
+}
+
+### 6c. Confirm incident D still has two reports and no assignment
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 7. File one damage report against incident A (InProgress).
+###    damageReportCount = 1 and the report joins the assignment history.
+### ---------------------------------------------------------------------------
+
+### 7a. Report A1
+# @name fileReportA1
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentA.response.body.$.id}}/reports
+Content-Type: application/json
+
+{
+  "description": "A parked car was mildly inconvenienced.",
+  "severity": "Minor",
+  "cost": 100,
+  "injury": 0,
+  "reportedAt": "2026-11-11T09:30:00"
+}
+
+### 7b. Confirm incident A has one report
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentA.response.body.$.id}}
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 8. Close incident A.
+###    One assessment: damageReportCount = 1, reputationDelta = 4.
+###    The assigned hero's reputation becomes 4 and the hero is freed.
+### ---------------------------------------------------------------------------
+
+### 8a. Close incident A
+# @name closeIncidentA
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentA.response.body.$.id}}/close
+Content-Type: application/json
+
+### 8b. Confirm incident A is Closed
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentA.response.body.$.id}}
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 9. Check incident D.
+###    The freed hero was auto-assigned to the oldest Opened incident (D),
+###    so D is InProgress and both reports now have an assignmentId.
+### ---------------------------------------------------------------------------
+
+### 9a. Incident D after auto-dispatch
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}
+Accept: application/json
+
+### 9b. Incident D's assignment
+# @name getIncidentDAssignment
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}/assignment
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 10. Get the freed hero's detail and assessments.
+###     Reputation is 4 and the assessment is present.
+### ---------------------------------------------------------------------------
+
+### 10a. Hero A detail
+GET {{WWSHA.Api_HostAddress}}/api/heroes/{{registerHeroA.response.body.$.id}}
+Accept: application/json
+
+### 10b. Hero A assessments
+GET {{WWSHA.Api_HostAddress}}/api/heroes/{{registerHeroA.response.body.$.id}}/assessments
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 11. Attempt to assign the busy hero A to incident B.
+###     Returns 409 with code "hero.unavailable".
+### ---------------------------------------------------------------------------
+
+### 11a. Busy hero rejection
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentB.response.body.$.id}}/heroes
+Content-Type: application/json
+
+{
+  "heroId": "{{registerHeroA.response.body.$.id}}"
+}
+
+### ---------------------------------------------------------------------------
+### 12. Attempt to file a report against closed incident A.
+###     Returns 409 with code "incident.closed".
+### ---------------------------------------------------------------------------
+
+### 12a. Closed incident rejection
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentA.response.body.$.id}}/reports
+Content-Type: application/json
+
+{
+  "description": "Too late, the paperwork is already filed.",
+  "severity": "Minor",
+  "cost": 1,
+  "injury": 0
+}
+
+### ---------------------------------------------------------------------------
+### 13. Register two more heroes and add both to incident D.
+###     A third new hero is registered so the fourth-assignment rejection
+###     can be exercised. All three remain Available.
+### ---------------------------------------------------------------------------
+
+### 13a. Hero E
+# @name registerHeroE
+POST {{WWSHA.Api_HostAddress}}/api/heroes
+Content-Type: application/json
+
+{
+  "name": "The Procrastinating Porcupine",
+  "superpower": "Eventually gets around to it"
+}
+
+### 13b. Hero F
+# @name registerHeroF
+POST {{WWSHA.Api_HostAddress}}/api/heroes
+Content-Type: application/json
+
+{
+  "name": "Doctor Maybe",
+  "superpower": "Answers every question with a shrug"
+}
+
+### 13c. Hero G (reserved for the assignment-full rejection)
+# @name registerHeroG
+POST {{WWSHA.Api_HostAddress}}/api/heroes
+Content-Type: application/json
+
+{
+  "name": "The Unassignable",
+  "superpower": "Arrives precisely one minute too late"
+}
+
+### 13d. Add hero E to incident D
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}/heroes
+Content-Type: application/json
+
+{
+  "heroId": "{{registerHeroE.response.body.$.id}}"
+}
+
+### 13e. Add hero F to incident D
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}/heroes
+Content-Type: application/json
+
+{
+  "heroId": "{{registerHeroF.response.body.$.id}}"
+}
+
+### 13f. Attempt to add a fourth hero to incident D
+###      Returns 409 with code "assignment.full".
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}/heroes
+Content-Type: application/json
+
+{
+  "heroId": "{{registerHeroG.response.body.$.id}}"
+}
+
+### 13g. Confirm incident D has three assigned heroes
+GET {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 14. Close incident D.
+###     Three assessments: damageReportCount = 2, reputationDelta = 3 each.
+###     Hero A's reputation ends at 7.
+### ---------------------------------------------------------------------------
+
+### 14a. Close incident D
+# @name closeIncidentD
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{fileIncidentD.response.body.$.id}}/close
+Content-Type: application/json
+
+### 14b. Confirm hero A's final reputation
+GET {{WWSHA.Api_HostAddress}}/api/heroes/{{registerHeroA.response.body.$.id}}
+Accept: application/json
+
+### 14c. All assessments for incident D
+GET {{WWSHA.Api_HostAddress}}/api/assessments?incidentId={{fileIncidentD.response.body.$.id}}
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 15. Query filters
+### ---------------------------------------------------------------------------
+
+### 15a. Opened incidents (none remain after the workflow)
+GET {{WWSHA.Api_HostAddress}}/api/incidents?status=Opened
+Accept: application/json
+
+### 15b. InProgress incidents
+GET {{WWSHA.Api_HostAddress}}/api/incidents?status=InProgress
+Accept: application/json
+
+### 15c. Closed incidents (A and D)
+GET {{WWSHA.Api_HostAddress}}/api/incidents?status=Closed
+Accept: application/json
+
+### 15d. Category filter
+GET {{WWSHA.Api_HostAddress}}/api/incidents?category=WanderingKaiju
+Accept: application/json
+
+### 15e. City filter
+GET {{WWSHA.Api_HostAddress}}/api/incidents?city=Ogdenville
+Accept: application/json
+
+### 15f. Invalid status filter (400)
+GET {{WWSHA.Api_HostAddress}}/api/incidents?status=NotAStatus
+Accept: application/json
+
+### 15g. Available heroes (A, E, and F were freed when D closed; G was never assigned)
+GET {{WWSHA.Api_HostAddress}}/api/heroes?available=true
+Accept: application/json
+
+### 15h. Unavailable heroes (B and C remain busy)
+GET {{WWSHA.Api_HostAddress}}/api/heroes?available=false
+Accept: application/json
+
+### 15i. Open assignments (incidents B and C remain InProgress)
+GET {{WWSHA.Api_HostAddress}}/api/assignments?open=true
+Accept: application/json
+
+### 15j. All assignments
+GET {{WWSHA.Api_HostAddress}}/api/assignments
+Accept: application/json
+
+### ---------------------------------------------------------------------------
+### 16. OpenAPI document
+### ---------------------------------------------------------------------------
+
+### 16a. OpenAPI v1
+GET {{WWSHA.Api_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+### 16b. Missing hero (404)
+GET {{WWSHA.Api_HostAddress}}/api/heroes/00000000-0000-0000-0000-000000000000
+Accept: application/json
