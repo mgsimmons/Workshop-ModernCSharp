@@ -1,5 +1,4 @@
 <Solution>
-  <Project Path="WWSHA.Api/WWSHA.Api.csproj" />
   <Project Path="WWSHA.Domain.Tests/WWSHA.Domain.Tests.csproj" />
   <Project Path="WWSHA.Domain/WWSHA.Domain.csproj" />
   <Project Path="WWSHA.Persistence.Tests/WWSHA.Persistence.Tests.csproj" />
