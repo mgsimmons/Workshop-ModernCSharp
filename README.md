@@ -193,6 +193,8 @@ The various `Dto` classes are usually `record`s that contain the fields needed b
 ## To Be Continued...
 There's certainly more work that could be done from here:
 
+* end-to-end tests that use the API to test the entire system as a "black box" that functions correctly. This could be as simple as a collection of `curl` commands that are fired in a particular order, or it could be a highly-extensive collection of parallel HTTP client calls run in arbitrary order across a pool of threads.
+
 * wire it up to an actual database, instead of the in-memory storage engine
 
     * [SQLite](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/)
