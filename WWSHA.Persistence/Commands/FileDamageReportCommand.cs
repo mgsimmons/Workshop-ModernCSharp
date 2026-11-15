@@ -24,7 +24,9 @@ public sealed record FileDamageReportCommand(
 
         repository.Save(report);
         if (incident.Assignment is not null)
+        {
             repository.Save(incident.Assignment);
+        }
         repository.Save(incident);
 
         return report;

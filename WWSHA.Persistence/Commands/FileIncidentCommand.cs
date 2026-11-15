@@ -21,8 +21,10 @@ public sealed record FileIncidentCommand(
         var now = CommandHelpers.Now(context);
 
         if (OccurredAt > now + FutureTolerance)
+        {
             throw new InvalidIncidentException(
                 $"An incident cannot occur more than {FutureTolerance.TotalDays} day(s) in the future.");
+        }
 
         var incident = new Incident(City, OccurredAt, Description, Category);
         repository.Save(incident);

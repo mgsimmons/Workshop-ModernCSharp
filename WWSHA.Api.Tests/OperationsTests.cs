@@ -36,7 +36,9 @@ public class OperationsTests
         {
             builder.UseEnvironment("Development");
             if (clock is not null)
+            {
                 builder.ConfigureTestServices(services => services.AddSingleton<TimeProvider>(clock));
+            }
         });
 
     private static async Task<string?> ProblemCode(HttpResponseMessage response)

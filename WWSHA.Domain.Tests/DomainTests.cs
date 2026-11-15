@@ -190,7 +190,9 @@ public class DomainTests
         var incident = BarFight();
         incident.AssignHero(new Hero("A", "x", reputation: 0), Noon);
         for (int i = 0; i < 7; i++)
+        {
             FileReport(incident);
+        }
 
         incident.Close(Noon);
 

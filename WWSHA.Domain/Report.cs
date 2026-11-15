@@ -13,7 +13,9 @@ public sealed class Report
         DateTime filedAt)
     {
         if (!Enum.IsDefined(severity))
+        {
             throw new InvalidReportException($"'{severity}' is not a valid report severity.");
+        }
 
         IncidentId = incidentId;
         City = Check.Text(city, nameof(city), DomainLimits.CityMaxLength);

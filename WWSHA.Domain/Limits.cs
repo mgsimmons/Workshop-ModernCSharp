@@ -23,7 +23,9 @@ internal static class Check
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(value, name);
         if (value.Length > maxLength)
+        {
             throw new ArgumentException($"{name} must be {maxLength} characters or fewer.", name);
+        }
         return value;
     }
 
@@ -31,7 +33,9 @@ internal static class Check
     public static int Range(int value, string name, int min, int max)
     {
         if (value < min || value > max)
+        {
             throw new ArgumentOutOfRangeException(name, value, $"{name} must be between {min} and {max}.");
+        }
         return value;
     }
 }

@@ -38,8 +38,10 @@ public sealed class DomainExceptionHandler(
         };
 
         if (status == StatusCodes.Status500InternalServerError)
+        {
             logger.LogError(exception, "Unhandled exception processing {Method} {Path}.",
                 httpContext.Request.Method, httpContext.Request.Path);
+        }
 
         var problem = new ProblemDetails
         {

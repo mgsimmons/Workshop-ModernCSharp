@@ -25,9 +25,13 @@ public sealed record CloseIncidentCommand(Guid IncidentId) : ICommand<CloseIncid
             .ToList();
 
         foreach (var hero in heroes)
+        {
             repository.Save(hero);
+        }
         foreach (var assessment in assessments)
+        {
             repository.Save(assessment);
+        }
         repository.Save(incident.Assignment!);
         repository.Save(incident);
 

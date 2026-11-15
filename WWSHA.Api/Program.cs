@@ -25,7 +25,9 @@ var app = builder.Build();
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
+}
 
 app.MapGet("/api/health", () => Results.Ok(new HealthResponse("ok")))
     .WithTags("Health");

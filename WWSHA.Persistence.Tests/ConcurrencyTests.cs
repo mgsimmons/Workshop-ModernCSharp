@@ -54,7 +54,9 @@ public class ConcurrencyTests
 
             // A hero's current incident matches the assignment they are on.
             foreach (var assignment in ctx.Assignments)
+            {
                 Assert.All(assignment.Heroes, h => Assert.Equal(assignment.Incident.Id, h.CurrentIncidentId));
+            }
 
             return 0;
         });
@@ -68,10 +70,14 @@ public class ConcurrencyTests
         const int incidentCount = 25;
 
         for (int i = 0; i < heroCount; i++)
+        {
             store.Execute(new RegisterHeroCommand($"Hero {i}", "x", Reputation: 0), h => h);
+        }
         for (int i = 0; i < incidentCount; i++)
+        {
             store.Execute(new FileIncidentCommand("Redmond", Start.AddMinutes(i), $"Incident {i}", IncidentCategory.PettyCrime),
                 incident => incident);
+        }
 
         // Close whatever is in progress, all at once. Each close frees heroes, which the command
         // dispatches to waiting incidents, so this runs in rounds until nothing is left in progress.
@@ -83,7 +89,9 @@ public class ConcurrencyTests
                 .Select(i => i.Id)
                 .ToArray());
             if (inProgress.Length == 0)
+            {
                 break;
+            }
 
             var closes = inProgress.Select(id => Task.Run(() =>
                 store.Execute(new CloseIncidentCommand(id), result => result)));
@@ -104,7 +112,9 @@ public class ConcurrencyTests
 
             // Reputation is exactly the sum of that hero's assessments, with no lost updates.
             foreach (var hero in ctx.Heroes)
+            {
                 Assert.Equal(hero.Assessments.Sum(a => a.ReputationChange), hero.Reputation);
+            }
 
             // One assessment per hero per incident they worked, and nothing recorded twice.
             var pairs = ctx.Assessments.Select(a => (a.HeroId, a.IncidentId)).ToList();

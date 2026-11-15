@@ -30,13 +30,19 @@ public sealed class Assignment
         ArgumentNullException.ThrowIfNull(hero);
 
         if (IsClosed)
+        {
             throw new InvalidIncidentStateException($"Assignment '{Id}' is closed.");
+        }
 
         if (_heroes.Contains(hero))
+        {
             throw new DuplicateAssignmentException(hero.Name);
+        }
 
         if (_heroes.Count >= MaxHeroes)
+        {
             throw new AssignmentFullException(MaxHeroes);
+        }
 
         hero.Assign(Incident.Id); // throws HeroUnavailableException before we mutate anything
         _heroes.Add(hero);
@@ -47,10 +53,14 @@ public sealed class Assignment
         ArgumentNullException.ThrowIfNull(report);
 
         if (IsClosed)
+        {
             throw new InvalidIncidentStateException($"Assignment '{Id}' is closed.");
+        }
 
         if (_reports.Any(existing => existing.Id == report.Id))
+        {
             throw new InvalidReportException($"Report '{report.Id}' is already in this assignment.");
+        }
 
         _reports.Add(report);
     }
@@ -58,7 +68,9 @@ public sealed class Assignment
     internal void Close(DateTime closedAt)
     {
         if (IsClosed)
+        {
             throw new InvalidIncidentStateException($"Assignment '{Id}' is already closed.");
+        }
 
         ClosedAt = closedAt;
     }

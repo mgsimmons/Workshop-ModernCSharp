@@ -27,7 +27,9 @@ public sealed class Hero
     public void Assign(Guid incidentId)
     {
         if (Availability == Availability.Unavailable)
+        {
             throw new HeroUnavailableException(Name);
+        }
 
         Availability = Availability.Unavailable;
         CurrentIncidentId = incidentId;
@@ -56,13 +58,19 @@ public sealed class Hero
         ArgumentNullException.ThrowIfNull(assessment);
 
         if (Availability == Availability.Available || CurrentIncidentId is null)
+        {
             throw new InvalidAssessmentException($"Hero '{Name}' has no active assignment to assess.");
+        }
 
         if (assessment.HeroId != Id)
+        {
             throw new InvalidAssessmentException("The assessment does not belong to this hero.");
+        }
 
         if (assessment.IncidentId != CurrentIncidentId)
+        {
             throw new InvalidAssessmentException(
                 $"The assessment is for incident '{assessment.IncidentId}', but hero '{Name}' is working on '{CurrentIncidentId}'.");
+        }
     }
 }

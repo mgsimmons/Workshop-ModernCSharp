@@ -255,7 +255,9 @@ public class ApiTests
         var client = host.CreateClient();
         var heroes = new List<HeroDto>();
         for (int i = 0; i < 4; i++)
+        {
             heroes.Add(await RegisterHero(client, $"Hero {i}"));
+        }
         var incident = await FileIncident(client);   // hero 0 auto-assigned
 
         await client.PostAsJsonAsync($"/api/incidents/{incident.Id}/heroes", new AssignHeroRequest(heroes[1].Id), Json);
@@ -512,10 +514,14 @@ public class ApiTests
 
         var work = new List<Task<HttpResponseMessage>>();
         for (int i = 0; i < heroCount; i++)
+        {
             work.Add(client.PostAsJsonAsync("/api/heroes", new RegisterHeroRequest($"Hero {i}", "x"), Json));
+        }
         for (int i = 0; i < incidentCount; i++)
+        {
             work.Add(client.PostAsJsonAsync("/api/incidents",
                 new FileIncidentRequest("Redmond", Noon.AddMinutes(i), "Brawl", IncidentCategory.PettyCrime), Json));
+        }
         var responses = await Task.WhenAll(work);
 
         Assert.All(responses, r => Assert.Equal(HttpStatusCode.Created, r.StatusCode));

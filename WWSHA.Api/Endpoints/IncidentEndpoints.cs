@@ -27,8 +27,10 @@ public static class IncidentEndpoints
             if (status is not null)
             {
                 if (!TryParseEnum(status, out IncidentStatus s))
+                {
                     return Results.Problem(statusCode: 400, title: "Invalid request",
                         detail: $"'{status}' is not a valid incident status.");
+                }
                 parsedStatus = s;
             }
 
@@ -36,8 +38,10 @@ public static class IncidentEndpoints
             if (category is not null)
             {
                 if (!TryParseEnum(category, out IncidentCategory c))
+                {
                     return Results.Problem(statusCode: 400, title: "Invalid request",
                         detail: $"'{category}' is not a valid incident category.");
+                }
                 parsedCategory = c;
             }
 
@@ -107,7 +111,9 @@ public static class IncidentEndpoints
     internal static bool TryParseEnum<TEnum>(string value, out TEnum result) where TEnum : struct, Enum
     {
         if (Enum.TryParse(value, ignoreCase: true, out result) && Enum.IsDefined(result))
+        {
             return true;
+        }
 
         result = default;
         return false;

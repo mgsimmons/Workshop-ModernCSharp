@@ -106,7 +106,9 @@ public class GuardTests
     {
         var assignment = new Assignment(Brawl(), Noon);
         for (int i = 0; i < Assignment.MaxHeroes; i++)
+        {
             assignment.AddHero(new Hero($"H{i}", "x"));
+        }
 
         var ex = Assert.Throws<AssignmentFullException>(() => assignment.AddHero(new Hero("Extra", "x")));
         Assert.Equal("assignment.full", ex.Code);

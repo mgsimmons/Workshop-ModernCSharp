@@ -53,7 +53,9 @@ internal static class CommandHelpers
         var freeHeroes = new Queue<Hero>(
             context.Heroes.Where(h => h.Availability == Availability.Available));
         if (freeHeroes.Count == 0)
+        {
             return;
+        }
 
         var waiting = context.Incidents
             .Where(i => i.Status == IncidentStatus.Opened)
@@ -63,7 +65,9 @@ internal static class CommandHelpers
         foreach (var incident in waiting)
         {
             if (freeHeroes.Count == 0)
+            {
                 return;
+            }
 
             AssignAndSave(repository, incident, freeHeroes.Dequeue(), now);
         }
