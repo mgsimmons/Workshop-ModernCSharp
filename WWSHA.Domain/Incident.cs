@@ -11,12 +11,9 @@ public sealed class Incident
 
     public Incident(string city, DateTime occurredAt, string description, IncidentCategory category)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(city);
-        ArgumentException.ThrowIfNullOrWhiteSpace(description);
-
-        City = city;
+        City = Check.Text(city, nameof(city), DomainLimits.CityMaxLength);
+        Description = Check.Text(description, nameof(description), DomainLimits.DescriptionMaxLength);
         OccurredAt = occurredAt;
-        Description = description;
         Category = category;
     }
 
@@ -88,20 +85,31 @@ public sealed class Incident
     /// Closes an in-progress incident, assesses every assigned hero (reputation change is
     /// 5 minus the incident's report count), and frees them for new work.
     /// </summary>
+    /// <remarks>
+    /// All checks run before anything changes. If any hero cannot be assessed, the incident and every
+    /// hero are left exactly as they were.
+    /// </remarks>
     public void Close(DateTime closedAt)
     {
         if (Status == IncidentStatus.Closed)
             throw new IncidentClosedException(Id);
 
-        if (Status != IncidentStatus.InProgress || Assignment is null)
+        if (Status != IncidentStatus.InProgress || Assignment is null || Assignment.IsClosed)
             throw new InvalidIncidentStateException(
                 $"Only in-progress incidents can be closed (current status: {Status}).");
 
         int reportCount = _reports.Count;
-        foreach (var hero in Assignment.Heroes)
-        {
-            hero.RecordAssessment(new Assessment(hero.Id, Id, reportCount, closedAt));
-        }
+        var plan = Assignment.Heroes
+            .Select(hero => (Hero: hero, Assessment: new Assessment(hero.Id, Id, reportCount, closedAt)))
+            .ToList();
+
+        // Phase 1: validate every assessment without changing anything.
+        foreach (var (hero, assessment) in plan)
+            hero.ValidateAssessment(assessment);
+
+        // Phase 2: apply. Validation has passed, so these cannot fail.
+        foreach (var (hero, assessment) in plan)
+            hero.RecordAssessment(assessment);
 
         Assignment.Close(closedAt);
         Status = IncidentStatus.Closed;

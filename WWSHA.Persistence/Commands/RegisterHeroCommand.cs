@@ -11,10 +11,12 @@ public sealed record RegisterHeroCommand(string Name, string Superpower, int Rep
 {
     public Hero Execute(IDomainContext context, IDomainRepository repository)
     {
+        var now = CommandHelpers.Now(context);
+
         var hero = new Hero(Name, Superpower, Reputation);
         repository.Save(hero);
 
-        CommandHelpers.DispatchQueuedIncidents(context, repository);
+        CommandHelpers.DispatchQueuedIncidents(context, repository, now);
 
         return hero;
     }

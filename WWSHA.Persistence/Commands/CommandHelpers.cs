@@ -16,7 +16,10 @@ internal static class CommandHelpers
         context.Heroes.SingleOrDefault(h => h.Id == id)
         ?? throw new EntityNotFoundException(nameof(Hero), id);
 
-    /// <summary>The current local time, from the context's clock.</summary>
+    /// <summary>
+    /// The current local time. Commands read it once, before any change, so a clock failure
+    /// cannot leave a half-applied command behind.
+    /// </summary>
     public static DateTime Now(IDomainContext context) =>
         context.Clock.GetLocalNow().DateTime;
 
@@ -25,12 +28,12 @@ internal static class CommandHelpers
     /// Domain checks run first, so a rejected assignment writes nothing.
     /// </summary>
     public static void AssignAndSave(
-        IDomainContext context,
         IDomainRepository repository,
         Incident incident,
-        Hero hero)
+        Hero hero,
+        DateTime now)
     {
-        incident.AssignHero(hero, Now(context));
+        incident.AssignHero(hero, now);
 
         repository.Save(hero);
         repository.Save(incident.Assignment!);
@@ -42,21 +45,27 @@ internal static class CommandHelpers
     /// either no hero is free or no incident is waiting. Called whenever a hero becomes free or
     /// a new incident is filed, so a waiting incident never stays Opened while a hero is idle.
     /// </summary>
-    public static void DispatchQueuedIncidents(IDomainContext context, IDomainRepository repository)
+    public static void DispatchQueuedIncidents(
+        IDomainContext context,
+        IDomainRepository repository,
+        DateTime now)
     {
+        var freeHeroes = new Queue<Hero>(
+            context.Heroes.Where(h => h.Availability == Availability.Available));
+        if (freeHeroes.Count == 0)
+            return;
+
         var waiting = context.Incidents
             .Where(i => i.Status == IncidentStatus.Opened)
             .OrderBy(i => i.OccurredAt)
-            .ThenBy(i => i.Id)
-            .ToArray();
+            .ThenBy(i => i.Id);
 
         foreach (var incident in waiting)
         {
-            var hero = context.Heroes.FirstOrDefault(h => h.Availability == Availability.Available);
-            if (hero is null)
+            if (freeHeroes.Count == 0)
                 return;
 
-            AssignAndSave(context, repository, incident, hero);
+            AssignAndSave(repository, incident, freeHeroes.Dequeue(), now);
         }
     }
 }

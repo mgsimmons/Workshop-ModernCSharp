@@ -33,6 +33,10 @@ public sealed class InvalidIncidentStateException(string message)
 public sealed class InvalidReportException(string message)
     : DomainException(message, "report.invalid");
 
+/// <summary>An incident has values the agency cannot accept, such as an occurrence time in the future.</summary>
+public sealed class InvalidIncidentException(string message)
+    : DomainException(message, "incident.invalid");
+
 /// <summary>An assessment does not match the hero or incident it is being recorded against.</summary>
 public sealed class InvalidAssessmentException(string message)
     : DomainException(message, "assessment.invalid");

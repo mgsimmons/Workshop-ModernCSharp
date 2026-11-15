@@ -6,12 +6,10 @@ public sealed class Hero
 
     public Hero(string name, string superpower, int reputation = 0)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        ArgumentException.ThrowIfNullOrWhiteSpace(superpower);
-
-        Name = name;
-        Superpower = superpower;
-        Reputation = reputation;
+        Name = Check.Text(name, nameof(name), DomainLimits.NameMaxLength);
+        Superpower = Check.Text(superpower, nameof(superpower), DomainLimits.SuperpowerMaxLength);
+        Reputation = Check.Range(reputation, nameof(reputation),
+            DomainLimits.StartingReputationMin, DomainLimits.StartingReputationMax);
     }
 
     public Guid Id { get; } = Guid.NewGuid();
@@ -41,6 +39,20 @@ public sealed class Hero
     /// </summary>
     public void RecordAssessment(Assessment assessment)
     {
+        ValidateAssessment(assessment);
+
+        _assessments.Add(assessment);
+        Reputation += assessment.ReputationChange;
+        Availability = Availability.Available;
+        CurrentIncidentId = null;
+    }
+
+    /// <summary>
+    /// Checks that <paramref name="assessment"/> could be recorded, without recording it. Callers
+    /// validate a whole batch before applying any of it, so a failure leaves nothing half-done.
+    /// </summary>
+    internal void ValidateAssessment(Assessment assessment)
+    {
         ArgumentNullException.ThrowIfNull(assessment);
 
         if (Availability == Availability.Available || CurrentIncidentId is null)
@@ -52,10 +64,5 @@ public sealed class Hero
         if (assessment.IncidentId != CurrentIncidentId)
             throw new InvalidAssessmentException(
                 $"The assessment is for incident '{assessment.IncidentId}', but hero '{Name}' is working on '{CurrentIncidentId}'.");
-
-        _assessments.Add(assessment);
-        Reputation += assessment.ReputationChange;
-        Availability = Availability.Available;
-        CurrentIncidentId = null;
     }
 }

@@ -12,19 +12,15 @@ public sealed class Report
         int injury,
         DateTime filedAt)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(city);
-        ArgumentException.ThrowIfNullOrWhiteSpace(description);
         if (!Enum.IsDefined(severity))
             throw new InvalidReportException($"'{severity}' is not a valid report severity.");
-        ArgumentOutOfRangeException.ThrowIfNegative(cost);
-        ArgumentOutOfRangeException.ThrowIfNegative(injury);
 
         IncidentId = incidentId;
-        City = city;
-        Description = description;
+        City = Check.Text(city, nameof(city), DomainLimits.CityMaxLength);
+        Description = Check.Text(description, nameof(description), DomainLimits.DescriptionMaxLength);
         Severity = severity;
-        Cost = cost;
-        Injury = injury;
+        Cost = Check.Range(cost, nameof(cost), 0, DomainLimits.CostMax);
+        Injury = Check.Range(injury, nameof(injury), 0, DomainLimits.InjuryMax);
         FiledAt = filedAt;
     }
 

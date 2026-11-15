@@ -28,15 +28,36 @@ has been extended. The lab manual itself is unchanged.
 - **Report fields.** Beyond the lab's description, reports carry `severity` (Minor, Moderate, Severe),
   `cost` (zero or more), and `injury` (zero or more).
 
+- **Input limits.** Enforced by the domain (`DomainLimits`):
+  - names up to 100 characters, superpowers up to 200, cities up to 100, descriptions up to 2000
+  - starting reputation from -100 to 100
+  - report cost from 0 to 1,000,000,000, and injury from 0 to 1,000,000
+  - Violations return `400` with `request.invalid`.
+- **Future incidents.** An incident may not occur more than one day after the server's current time
+  (for clock skew). Violations return `400` with `incident.invalid`.
+
 ## Time
 
 Timestamps come from an injected `TimeProvider`, so tests can control them. The domain layer never
-reads the clock; commands pass the current time in.
+reads the clock; commands pass the current time in. Each command reads the clock before it changes
+anything, so a clock failure cannot leave a partial change behind.
+
+## Atomicity
+
+A command either applies completely or changes nothing. Closing an incident validates every
+hero's assessment before recording any of them. Assignment and report checks also run before any
+state changes.
 
 ## Concurrency
 
 The in-memory store takes one lock for every command, save, and query. Reads return snapshot
-copies, and API responses are built inside the lock, so they never show a half-applied change.
+arrays, reused until the next new object is saved, and API responses are built inside the lock, so
+they never show a half-applied change.
+
+## Errors
+
+Unexpected failures return a generic `500` with the code `server.error`. The exception message is
+logged, not returned.
 
 ## API conventions
 

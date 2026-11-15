@@ -3,23 +3,24 @@ using WWSHA.Domain;
 namespace WWSHA.Persistence;
 
 /// <summary>
-/// Stores every domain object in a <see cref="List{T}"/>. Implements both the read side
-/// (<see cref="IDomainContext"/>) and the write side (<see cref="IDomainRepository"/>).
+/// Stores every domain object in memory. Implements both the read side (<see cref="IDomainContext"/>)
+/// and the write side (<see cref="IDomainRepository"/>).
 /// </summary>
 /// <remarks>
 /// Every public member takes the same lock, so a command, a save, or a query never interleaves
-/// with another. Reads return snapshot copies, so callers can enumerate them safely. Query
-/// callers that map domain objects to other shapes should do so inside <see cref="Query{TResult}"/>,
+/// with another. Reads return snapshot arrays, so callers can enumerate them safely. A snapshot is
+/// rebuilt only after a new object is saved, so repeated reads between writes cost nothing extra.
+/// Query callers that map domain objects to other shapes should do so inside <see cref="Query{TResult}"/>,
 /// because the objects themselves are still mutated by commands.
 /// </remarks>
 public sealed class InMemoryDomainRepository : IDomainContext, IDomainRepository
 {
     private readonly Lock _gate = new();
-    private readonly List<Hero> _heroes = [];
-    private readonly List<Incident> _incidents = [];
-    private readonly List<Assignment> _assignments = [];
-    private readonly List<Report> _reports = [];
-    private readonly List<Assessment> _assessments = [];
+    private readonly Table<Hero> _heroes = new(h => h.Id);
+    private readonly Table<Incident> _incidents = new(i => i.Id);
+    private readonly Table<Assignment> _assignments = new(a => a.Id);
+    private readonly Table<Report> _reports = new(r => r.Id);
+    private readonly Table<Assessment> _assessments = new(a => a.Id);
 
     public InMemoryDomainRepository(TimeProvider? clock = null)
     {
@@ -28,40 +29,40 @@ public sealed class InMemoryDomainRepository : IDomainContext, IDomainRepository
 
     public TimeProvider Clock { get; }
 
-    public IReadOnlyCollection<Hero> Heroes => Snapshot(_heroes);
-    public IReadOnlyCollection<Incident> Incidents => Snapshot(_incidents);
-    public IReadOnlyCollection<Assignment> Assignments => Snapshot(_assignments);
-    public IReadOnlyCollection<Report> Reports => Snapshot(_reports);
-    public IReadOnlyCollection<Assessment> Assessments => Snapshot(_assessments);
+    public IReadOnlyCollection<Hero> Heroes { get { lock (_gate) return _heroes.Snapshot(); } }
+    public IReadOnlyCollection<Incident> Incidents { get { lock (_gate) return _incidents.Snapshot(); } }
+    public IReadOnlyCollection<Assignment> Assignments { get { lock (_gate) return _assignments.Snapshot(); } }
+    public IReadOnlyCollection<Report> Reports { get { lock (_gate) return _reports.Snapshot(); } }
+    public IReadOnlyCollection<Assessment> Assessments { get { lock (_gate) return _assessments.Snapshot(); } }
 
     public void Save(Hero hero)
     {
         ArgumentNullException.ThrowIfNull(hero);
-        lock (_gate) AddIfMissing(_heroes, hero);
+        lock (_gate) _heroes.Save(hero);
     }
 
     public void Save(Incident incident)
     {
         ArgumentNullException.ThrowIfNull(incident);
-        lock (_gate) AddIfMissing(_incidents, incident);
+        lock (_gate) _incidents.Save(incident);
     }
 
     public void Save(Assignment assignment)
     {
         ArgumentNullException.ThrowIfNull(assignment);
-        lock (_gate) AddIfMissing(_assignments, assignment);
+        lock (_gate) _assignments.Save(assignment);
     }
 
     public void Save(Report report)
     {
         ArgumentNullException.ThrowIfNull(report);
-        lock (_gate) AddIfMissing(_reports, report);
+        lock (_gate) _reports.Save(report);
     }
 
     public void Save(Assessment assessment)
     {
         ArgumentNullException.ThrowIfNull(assessment);
-        lock (_gate) AddIfMissing(_assessments, assessment);
+        lock (_gate) _assessments.Save(assessment);
     }
 
     /// <summary>
@@ -90,19 +91,26 @@ public sealed class InMemoryDomainRepository : IDomainContext, IDomainRepository
         }
     }
 
-    private IReadOnlyCollection<T> Snapshot<T>(List<T> items)
+    /// <summary>
+    /// Insertion-ordered storage for one kind of domain object. Membership is checked by id in
+    /// constant time. Domain objects are mutable and updated in place, so "save" only has to make
+    /// sure the object is present.
+    /// </summary>
+    private sealed class Table<T>(Func<T, Guid> keyOf) where T : class
     {
-        lock (_gate)
-        {
-            return items.ToArray();
-        }
-    }
+        private readonly List<T> _rows = [];
+        private readonly HashSet<Guid> _keys = [];
+        private T[]? _snapshot;
 
-    // Domain objects are mutable reference types and are updated in place, so "update" is
-    // just "make sure it's in the list". Reference equality is what we want here.
-    private static void AddIfMissing<T>(List<T> list, T item) where T : class
-    {
-        if (!list.Contains(item))
-            list.Add(item);
+        public void Save(T item)
+        {
+            if (_keys.Add(keyOf(item)))
+            {
+                _rows.Add(item);
+                _snapshot = null;
+            }
+        }
+
+        public IReadOnlyCollection<T> Snapshot() => _snapshot ??= _rows.ToArray();
     }
 }

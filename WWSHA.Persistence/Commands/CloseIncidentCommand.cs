@@ -13,9 +13,11 @@ public sealed record CloseIncidentCommand(Guid IncidentId) : ICommand<CloseIncid
 {
     public CloseIncidentResult Execute(IDomainContext context, IDomainRepository repository)
     {
+        var now = CommandHelpers.Now(context);
         var incident = CommandHelpers.FindIncident(context, IncidentId);
 
-        incident.Close(CommandHelpers.Now(context));
+        // Close validates everything before it changes anything, so a rejected close writes nothing.
+        incident.Close(now);
 
         var heroes = incident.Assignment!.Heroes;
         var assessments = heroes
@@ -29,7 +31,7 @@ public sealed record CloseIncidentCommand(Guid IncidentId) : ICommand<CloseIncid
         repository.Save(incident.Assignment!);
         repository.Save(incident);
 
-        CommandHelpers.DispatchQueuedIncidents(context, repository);
+        CommandHelpers.DispatchQueuedIncidents(context, repository, now);
 
         return new CloseIncidentResult(incident, assessments);
     }

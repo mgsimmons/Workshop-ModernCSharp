@@ -17,10 +17,10 @@ public sealed record FileDamageReportCommand(
 {
     public Report Execute(IDomainContext context, IDomainRepository repository)
     {
+        var now = CommandHelpers.Now(context);
         var incident = CommandHelpers.FindIncident(context, IncidentId);
 
-        var report = incident.FileReport(
-            City, Description, Severity, Cost, Injury, FiledAt ?? CommandHelpers.Now(context));
+        var report = incident.FileReport(City, Description, Severity, Cost, Injury, FiledAt ?? now);
 
         repository.Save(report);
         if (incident.Assignment is not null)
