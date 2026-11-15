@@ -59,6 +59,15 @@ they never show a half-applied change.
 Unexpected failures return a generic `500` with the code `server.error`. The exception message is
 logged, not returned.
 
+## Testing
+
+- Run everything: `dotnet test WWSHA.slnx` (110 tests: 31 domain, 25 persistence, 54 API).
+- Measure coverage: `dotnet test WWSHA.slnx --collect:"XPlat Code Coverage"`. Line coverage is 100%
+  and branch coverage is about 90%. The uncovered branches are mostly compiler-generated null
+  handling inside LINQ lambdas.
+- `InternalsVisibleTo` lets the domain tests exercise defensive guards (for example, adding a hero
+  to a closed assignment) that the public API cannot reach.
+
 ## API conventions
 
 - Enums are sent and received as names (`"InProgress"`), not numbers.
