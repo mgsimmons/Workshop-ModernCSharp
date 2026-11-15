@@ -1,10 +1,15 @@
-@WWSHA.Api_HostAddress = http://localhost:5000
+### WWSHA API requests (VS Code REST Client format)
+### Run the API with the "http" profile (dotnet run --launch-profile http), then send the requests
+### top to bottom. The hero and incident IDs are captured from earlier responses, so no editing is needed.
+
+@baseUrl = http://localhost:5178
 
 ### Health
-GET {{WWSHA.Api_HostAddress}}/api/health
+GET {{baseUrl}}/api/health
 
-### Register a hero (201; if an incident is waiting, the hero is dispatched to it)
-POST {{WWSHA.Api_HostAddress}}/api/heroes
+### Register a hero (201). If an incident is waiting, the hero is dispatched to it right away.
+# @name registerHero
+POST {{baseUrl}}/api/heroes
 Content-Type: application/json
 
 {
@@ -13,11 +18,14 @@ Content-Type: application/json
   "reputation": 1
 }
 
-### List available heroes
-GET {{WWSHA.Api_HostAddress}}/api/heroes?available=true
+@heroId = {{registerHero.response.body.$.id}}
 
-### File an incident (201; auto-assigned to the oldest free hero, or left Opened)
-POST {{WWSHA.Api_HostAddress}}/api/incidents
+### List available heroes
+GET {{baseUrl}}/api/heroes?available=true
+
+### File an incident (201). It is auto-assigned to the oldest free hero, or left Opened.
+# @name fileIncident
+POST {{baseUrl}}/api/incidents
 Content-Type: application/json
 
 {
@@ -27,11 +35,13 @@ Content-Type: application/json
   "category": "DrunkenBarFight"
 }
 
-### List in-progress incidents in Redmond
-GET {{WWSHA.Api_HostAddress}}/api/incidents?status=InProgress&city=Redmond
+@incidentId = {{fileIncident.response.body.$.id}}
 
-### File a damage report (201; allowed while Opened or InProgress)
-POST {{WWSHA.Api_HostAddress}}/api/incidents/{{incidentId}}/reports
+### List in-progress incidents in Redmond
+GET {{baseUrl}}/api/incidents?status=InProgress&city=Redmond
+
+### File a damage report (201). Allowed while the incident is Opened or InProgress.
+POST {{baseUrl}}/api/incidents/{{incidentId}}/reports
 Content-Type: application/json
 
 {
@@ -42,8 +52,8 @@ Content-Type: application/json
   "injury": 0
 }
 
-### Close the incident (200; assesses heroes, frees them, dispatches waiting incidents)
-POST {{WWSHA.Api_HostAddress}}/api/incidents/{{incidentId}}/close
+### Close the incident (200). Assesses heroes, frees them, and dispatches waiting incidents.
+POST {{baseUrl}}/api/incidents/{{incidentId}}/close
 
-### Assessments for a hero
-GET {{WWSHA.Api_HostAddress}}/api/heroes/{{heroId}}/assessments
+### Assessments for the hero
+GET {{baseUrl}}/api/heroes/{{heroId}}/assessments
