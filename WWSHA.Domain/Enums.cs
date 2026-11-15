@@ -22,3 +22,10 @@ public enum IncidentCategory
     DrunkenBarFight,
     WanderingKaiju
 }
+
+public enum ReportSeverity
+{
+    Minor,
+    Moderate,
+    Severe
+}

@@ -4,6 +4,8 @@ namespace WWSHA.Api.Contracts;
 
 // ---- Responses -------------------------------------------------------------
 
+public sealed record HealthResponse(string Status);
+
 public sealed record HeroDto(
     Guid Id,
     string Name,
@@ -37,6 +39,8 @@ public sealed record AssignmentDto(
     Guid Id,
     Guid IncidentId,
     IncidentStatus IncidentStatus,
+    DateTime CreatedAt,
+    DateTime? ClosedAt,
     IReadOnlyList<HeroDto> Heroes,
     IReadOnlyList<ReportDto> Reports);
 
@@ -45,6 +49,9 @@ public sealed record ReportDto(
     Guid IncidentId,
     string City,
     string Description,
+    ReportSeverity Severity,
+    int Cost,
+    int Injury,
     DateTime FiledAt);
 
 public sealed record AssessmentDto(
@@ -52,7 +59,8 @@ public sealed record AssessmentDto(
     Guid HeroId,
     Guid IncidentId,
     int ReportCount,
-    int ReputationChange);
+    int ReputationChange,
+    DateTime CreatedAt);
 
 public sealed record CloseIncidentResponse(
     IncidentDto Incident,
@@ -70,4 +78,11 @@ public sealed record FileIncidentRequest(
 
 public sealed record AssignHeroRequest(Guid HeroId);
 
-public sealed record FileReportRequest(string City, string Description, DateTime FiledAt);
+/// <summary>When <see cref="FiledAt"/> is omitted, the server's current time is used.</summary>
+public sealed record FileReportRequest(
+    string City,
+    string Description,
+    ReportSeverity Severity,
+    int Cost,
+    int Injury,
+    DateTime? FiledAt = null);

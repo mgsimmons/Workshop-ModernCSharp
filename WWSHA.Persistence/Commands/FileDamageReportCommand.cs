@@ -2,21 +2,30 @@ using WWSHA.Domain;
 
 namespace WWSHA.Persistence.Commands;
 
-/// <summary>Files a damage report against an in-progress incident.</summary>
+/// <summary>
+/// Files a damage report against an incident that is Opened or InProgress. If <see cref="FiledAt"/>
+/// is omitted, the context clock's current time is used.
+/// </summary>
 public sealed record FileDamageReportCommand(
     Guid IncidentId,
     string City,
     string Description,
-    DateTime FiledAt) : ICommand<Report>
+    ReportSeverity Severity,
+    int Cost,
+    int Injury,
+    DateTime? FiledAt = null) : ICommand<Report>
 {
     public Report Execute(IDomainContext context, IDomainRepository repository)
     {
         var incident = CommandHelpers.FindIncident(context, IncidentId);
 
-        var report = incident.FileReport(City, Description, FiledAt);
+        var report = incident.FileReport(
+            City, Description, Severity, Cost, Injury, FiledAt ?? CommandHelpers.Now(context));
 
         repository.Save(report);
-        repository.Save(incident.Assignment!);
+        if (incident.Assignment is not null)
+            repository.Save(incident.Assignment);
+        repository.Save(incident);
 
         return report;
     }

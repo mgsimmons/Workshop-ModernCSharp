@@ -2,7 +2,10 @@ using WWSHA.Domain;
 
 namespace WWSHA.Api.Contracts;
 
-/// <summary>Maps domain objects to DTOs. Must run inside the domain lock, since the lists are mutable.</summary>
+/// <summary>
+/// Maps domain objects to DTOs. Call these only inside <c>DomainService.Query</c> or
+/// <c>DomainService.Command</c>, so the objects are read while the store lock is held.
+/// </summary>
 public static class Mappers
 {
     public static HeroDto ToDto(this Hero hero) =>
@@ -20,18 +23,21 @@ public static class Mappers
         new(assignment.Id,
             assignment.Incident.Id,
             assignment.Incident.Status,
+            assignment.CreatedAt,
+            assignment.ClosedAt,
             assignment.Heroes.Select(h => h.ToDto()).ToArray(),
             assignment.Reports.Select(r => r.ToDto()).ToArray());
 
     public static ReportDto ToDto(this Report report) =>
-        new(report.Id, report.IncidentId, report.City, report.Description, report.FiledAt);
+        new(report.Id, report.IncidentId, report.City, report.Description,
+            report.Severity, report.Cost, report.Injury, report.FiledAt);
 
     public static AssessmentDto ToDto(this Assessment assessment) =>
         new(assessment.Id, assessment.HeroId, assessment.IncidentId,
-            assessment.ReportCount, assessment.ReputationChange);
+            assessment.ReportCount, assessment.ReputationChange, assessment.CreatedAt);
 
     public static IncidentDetailDto ToDetailDto(this Incident incident) =>
         new(incident.ToDto(),
             incident.Assignment?.ToDto(),
-            incident.Assignment?.Reports.Select(r => r.ToDto()).ToArray() ?? []);
+            incident.Reports.Select(r => r.ToDto()).ToArray());
 }

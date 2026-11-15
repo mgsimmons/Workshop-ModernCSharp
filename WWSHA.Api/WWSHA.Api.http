@@ -1,0 +1,49 @@
+@WWSHA.Api_HostAddress = http://localhost:5000
+
+### Health
+GET {{WWSHA.Api_HostAddress}}/api/health
+
+### Register a hero (201; if an incident is waiting, the hero is dispatched to it)
+POST {{WWSHA.Api_HostAddress}}/api/heroes
+Content-Type: application/json
+
+{
+  "name": "Captain Inconvenient",
+  "superpower": "Teleports people one to three feet to the left",
+  "reputation": 1
+}
+
+### List available heroes
+GET {{WWSHA.Api_HostAddress}}/api/heroes?available=true
+
+### File an incident (201; auto-assigned to the oldest free hero, or left Opened)
+POST {{WWSHA.Api_HostAddress}}/api/incidents
+Content-Type: application/json
+
+{
+  "city": "Redmond",
+  "occurredAt": "2026-11-15T12:00:00",
+  "description": "Rowdy sportsball fans brawling in a bar",
+  "category": "DrunkenBarFight"
+}
+
+### List in-progress incidents in Redmond
+GET {{WWSHA.Api_HostAddress}}/api/incidents?status=InProgress&city=Redmond
+
+### File a damage report (201; allowed while Opened or InProgress)
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{incidentId}}/reports
+Content-Type: application/json
+
+{
+  "city": "Redmond",
+  "description": "Table legs busted, glasses broken",
+  "severity": "Minor",
+  "cost": 350,
+  "injury": 0
+}
+
+### Close the incident (200; assesses heroes, frees them, dispatches waiting incidents)
+POST {{WWSHA.Api_HostAddress}}/api/incidents/{{incidentId}}/close
+
+### Assessments for a hero
+GET {{WWSHA.Api_HostAddress}}/api/heroes/{{heroId}}/assessments

@@ -10,7 +10,7 @@ public sealed record AssignHeroCommand(Guid IncidentId, Guid HeroId) : ICommand<
         var incident = CommandHelpers.FindIncident(context, IncidentId);
         var hero = CommandHelpers.FindHero(context, HeroId);
 
-        CommandHelpers.AssignAndSave(incident, hero, repository);
+        CommandHelpers.AssignAndSave(context, repository, incident, hero);
 
         return incident.Assignment!;
     }

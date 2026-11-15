@@ -76,7 +76,8 @@ public static class IncidentEndpoints
         group.MapPost("/{id:guid}/reports", (Guid id, FileReportRequest request, DomainService domain) =>
         {
             var report = domain.Command(
-                new FileDamageReportCommand(id, request.City, request.Description, request.FiledAt),
+                new FileDamageReportCommand(id, request.City, request.Description,
+                    request.Severity, request.Cost, request.Injury, request.FiledAt),
                 r => r.ToDto());
             return Results.Created($"/api/reports/{report.Id}", report);
         });
@@ -85,15 +86,8 @@ public static class IncidentEndpoints
         group.MapGet("/{id:guid}/reports", (Guid id, DomainService domain) =>
         {
             var reports = domain.Query<ReportDto[]?>(ctx =>
-            {
-                var incident = ctx.Incidents.SingleOrDefault(i => i.Id == id);
-                if (incident is null)
-                    return null;
-
-                return incident.Assignment is null
-                    ? []
-                    : incident.Assignment.Reports.Select(r => r.ToDto()).ToArray();
-            });
+                ctx.Incidents.SingleOrDefault(i => i.Id == id)
+                    ?.Reports.Select(r => r.ToDto()).ToArray());
             return reports is null ? Results.NotFound() : Results.Ok(reports);
         });
 

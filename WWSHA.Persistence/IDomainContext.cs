@@ -10,4 +10,7 @@ public interface IDomainContext
     IReadOnlyCollection<Assignment> Assignments { get; }
     IReadOnlyCollection<Report> Reports { get; }
     IReadOnlyCollection<Assessment> Assessments { get; }
+
+    /// <summary>The clock commands use for timestamps. Replace it in tests to make times deterministic.</summary>
+    TimeProvider Clock { get; }
 }

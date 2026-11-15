@@ -8,7 +8,7 @@ public sealed class Assessment
 {
     public const int BaseReputationGain = 5;
 
-    public Assessment(Guid heroId, Guid incidentId, int reportCount)
+    public Assessment(Guid heroId, Guid incidentId, int reportCount, DateTime createdAt)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(reportCount);
 
@@ -16,6 +16,7 @@ public sealed class Assessment
         IncidentId = incidentId;
         ReportCount = reportCount;
         ReputationChange = BaseReputationGain - reportCount;
+        CreatedAt = createdAt;
     }
 
     public Guid Id { get; } = Guid.NewGuid();
@@ -23,4 +24,5 @@ public sealed class Assessment
     public Guid IncidentId { get; }
     public int ReportCount { get; }
     public int ReputationChange { get; }
+    public DateTime CreatedAt { get; }
 }

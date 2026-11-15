@@ -3,8 +3,8 @@ using WWSHA.Domain;
 namespace WWSHA.Persistence.Commands;
 
 /// <summary>
-/// Files a new incident. If a hero is available, the first available one (in registration order)
-/// is assigned straight away and the incident becomes InProgress. Otherwise it stays Opened.
+/// Files a new incident. It is queued like any other Opened incident, and free heroes are dispatched
+/// oldest-first. If no hero is free it stays Opened until one becomes available.
 /// </summary>
 public sealed record FileIncidentCommand(
     string City,
@@ -17,9 +17,7 @@ public sealed record FileIncidentCommand(
         var incident = new Incident(City, OccurredAt, Description, Category);
         repository.Save(incident);
 
-        var available = context.Heroes.FirstOrDefault(h => h.Availability == Availability.Available);
-        if (available is not null)
-            CommandHelpers.AssignAndSave(incident, available, repository);
+        CommandHelpers.DispatchQueuedIncidents(context, repository);
 
         return incident;
     }
